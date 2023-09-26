@@ -32,7 +32,7 @@ void Task2()
 	auto endTime = steady_clock::now();
 	//MatrixOutDense(matrixC);
 	printf_s("AB=C time %d\n", duration_cast<milliseconds>(endTime - startTime).count());
-	printf("Matrix Norm = %lf\n", MatrixNorm(matrixC));
+	//printf("Matrix Norm = %lf\n", MatrixNorm(matrixC));
 
 }
 
@@ -56,6 +56,26 @@ void Task3()
 	//VectorOutput(y);
 	printf_s("Uy=b time %d", duration_cast<milliseconds>(endTime - startTime).count());
 }
+
+void Task7()
+{
+	double* matrixA, * matrixB, * matrixC;
+	matrixA = new double[n * n];
+	matrixB = new double[n * n];
+	matrixC = new double[n * n];
+	MatrixGenerator(matrixA);
+	MatrixGenerator(matrixB);
+	//MatrixOutDense(matrixA);
+	//MatrixOutDense(matrixB);
+	MatrixTransposition(matrixB);
+	//MatrixOutDense(matrixB);
+	auto startTime = steady_clock::now();
+	MatrixMatrixMultiplicationByLines(matrixA, matrixB, matrixC);
+	auto endTime = steady_clock::now();
+	//MatrixOutDense(matrixC);
+	printf_s("AB^T=C time %d", duration_cast<milliseconds>(endTime - startTime).count());
+}
+
 
 
 void VectorGenerator(double* outArray) {
@@ -192,3 +212,37 @@ void CalculateY(double *matrixU, double *vectorX, double* vectorB){
 		vectorX[i] = tmp;
 	}
 }
+
+void MatrixTransposition(double* matrix)
+{
+	double tmp = 0;
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = 0; j < i; j++)
+		{
+			tmp = matrix[num(i, j)];
+			matrix[num(i, j)] = matrix[num(j, i)];
+			matrix[num(j, i)] = tmp;
+		}
+	}
+}
+
+
+void MatrixMatrixMultiplicationByLines(double* matrixA, double* matrixB, double* matrixC)
+{
+	double sum = 0;
+#pragma omp parallel for reduction(+ : sum) num_threads(4)
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = 0; j < n; j++)
+		{
+			sum = 0;
+			for (int k = 0; k < n; k++)
+			{
+				sum += matrixA[num(i, k)] * matrixB[num(j,k)];
+			}
+			matrixC[num(i, j)] = sum;
+		}
+	}
+}
+
