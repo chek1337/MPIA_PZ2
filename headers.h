@@ -1,6 +1,6 @@
 #pragma once
 #include <chrono>
-const int n = 10;
+const int n = 100;
 
 using namespace std;
 using namespace std::chrono;

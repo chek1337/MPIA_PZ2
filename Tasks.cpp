@@ -95,7 +95,7 @@ double ScalarProduct(double* a, double* b) {
 void MatrixMatrixMultiplication(double* matrixA, double* matrixB, double* matrixC)
 {
 	double sum = 0;
-#pragma omp parallel for reduction(+ : sum) num_threads(4)
+#pragma omp parallel for reduction(+ : sum) num_threads(2)
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < n; j++)
