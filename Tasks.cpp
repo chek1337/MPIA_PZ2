@@ -23,8 +23,7 @@ void Task2()
 	matrixB = new double[n * n];
 	matrixC = new double[n * n];
 	MatrixGenerator(matrixA);
-	MatrixGenerator(matrixB);
-	MatrixGenerator(matrixC);
+	MatrixGenerator2(matrixB);
 	//MatrixOutDense(matrixA);
 	//MatrixOutDense(matrixB);
 	auto startTime = steady_clock::now();
@@ -33,7 +32,7 @@ void Task2()
 	//MatrixOutDense(matrixC);
 	printf_s("AB=C time %d\n", duration_cast<milliseconds>(endTime - startTime).count());
 	//Ne sovsem ponyal nado li vreamya norm'i zaemryat'
-	//printf("Matrix Norm = %lf\n", MatrixNorm(matrixC)); 
+	printf("Matrix Norm = %lf\n", MatrixNorm(matrixC)); 
 
 }
 
@@ -56,6 +55,8 @@ void Task3()
 	auto endTime = steady_clock::now();
 	//VectorOutput(y);
 	printf_s("Uy=b time %d", duration_cast<milliseconds>(endTime - startTime).count());
+
+	printf_s("\n%f", VectorNorm(x));
 }
 
 void Task7()
@@ -65,7 +66,7 @@ void Task7()
 	matrixB = new double[n * n];
 	matrixC = new double[n * n];
 	MatrixGenerator(matrixA);
-	MatrixGenerator(matrixB);
+	MatrixGenerator2(matrixB);
 	//MatrixOutDense(matrixA);
 	//MatrixOutDense(matrixB);
 	MatrixTransposition(matrixB);
@@ -73,26 +74,28 @@ void Task7()
 	auto startTime = steady_clock::now();
 	MatrixMatrixMultiplicationByLines(matrixA, matrixB, matrixC);
 	auto endTime = steady_clock::now();
-	//MatrixOutDense(matrixC);
+	///MatrixOutDense(matrixC);
 	printf_s("AB^T=C time %d", duration_cast<milliseconds>(endTime - startTime).count());
+
+	
 }
 
 
 double ScalarProduct(double* a, double* b) {
-	double s = 0;
-#pragma omp parallel for reduction(+ : s) num_threads(4)
+	double sum = 0;
+#pragma omp parallel for reduction(+ : sum) num_threads(4)
 	for (int i = 0; i < n; i++)
 	{
-		s += a[i] * b[i];
+		sum += a[i] * b[i];
 	}
-	return s;
+	return sum;
 }
 
 
 void MatrixMatrixMultiplication(double* matrixA, double* matrixB, double* matrixC)
 {
 	double sum = 0;
-#pragma omp parallel for private (j,k) num_threads(4)
+#pragma omp parallel for reduction(+ : sum) num_threads(4)
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < n; j++)
@@ -100,8 +103,9 @@ void MatrixMatrixMultiplication(double* matrixA, double* matrixB, double* matrix
 			sum = 0;
 			for (int k = 0; k < n; k++)
 			{
-				matrixC[num(i, j)] += matrixA[num(i, k)] * matrixB[num(k, j)];
+				sum += matrixA[i*n + k] * matrixB[k*n+j];
 			}
+			matrixC[i * n + j] = sum;
 		}
 	}
 }
@@ -117,18 +121,29 @@ double MatrixNorm(double* matrixIn)
 	return sqrt(norm);
 }
 
+double VectorNorm(double* a) {
+	double norm = 0;
+#pragma omp parallel for reduction(+ : norm) num_threads(4)
+	for (int i = 0; i < n; i++)
+	{
+		norm += a[i] * a[i];
+	}
+	return sqrt(norm);
+}
+
+
 void CalculateY(double* matrixU, double* vectorX, double* vectorB) {
 
-	double sum = 0, tmp = 0;
+	double sum = 0;
 #pragma omp parallel for reduction(+ : sum) num_threads(1)
 	for (int i = n - 1; i >= 0; i--)
 	{
 		double sum = 0;
 		for (int j = n - 1; j > i; j--)
 		{
-			sum += matrixU[num(i, j)] * vectorX[j];
+			sum += matrixU[i*n+j] * vectorX[j];
 		}
-		vectorX[i] = (vectorB[i] - sum) / matrixU[num(i, i)];
+		vectorX[i] = (vectorB[i] - sum) / matrixU[i*n + i];
 	}
 }
 
@@ -143,9 +158,9 @@ void MatrixMatrixMultiplicationByLines(double* matrixA, double* matrixB, double*
 			sum = 0;
 			for (int k = 0; k < n; k++)
 			{
-				sum += matrixA[num(i, k)] * matrixB[num(j, k)];
+				sum += matrixA[i*n + k] * matrixB[j*n + k];
 			}
-			matrixC[num(i, j)] = sum;
+			matrixC[i*n+j] = sum;
 		}
 	}
 }
@@ -189,7 +204,7 @@ void MatrixVectorMultiplication(double* matrixA, double* vectorX, double* vector
 		double sum = 0;
 		for (int j = 0; j < n; j++)
 		{
-			sum += matrixA[num(i, j)] * vectorX[j];
+			sum += matrixA[i*n+j] * vectorX[j];
 		}
 		vectorB[i] = sum;
 	}
@@ -223,15 +238,15 @@ void MatrixUGenerator(double* outMatrix) {   //Формула для вычис�
 		double sum = 0;
 		for (int j = 0; j < i; j++)
 		{
-			outMatrix[num(i, j)] = (double) 0.0;
+			outMatrix[i*n+j] = (double) 0.0;
 		}
 
 		for (int j = i + 1; j < n; j++)
 		{
-			outMatrix[num(i,j)] = ((i+j) % 10) + 1;
+			outMatrix[i*n+j] = ((i+j) % 10) + 1;
 			sum += ((i + j) % 10) + 1;
 		}	
-		outMatrix[num(i, i)] = sum + 1; 
+		outMatrix[i*n + i] = sum + 1; 
 	}
 }
 
@@ -243,9 +258,9 @@ void MatrixTransposition(double* matrix)
 	{
 		for (int j = 0; j < i; j++)
 		{
-			tmp = matrix[num(i, j)];
-			matrix[num(i, j)] = matrix[num(j, i)];
-			matrix[num(j, i)] = tmp;
+			tmp = matrix[i*n+j];
+			matrix[i*n+j] = matrix[j*n + i];
+			matrix[j*n + i] = tmp;
 		}
 	}
 }

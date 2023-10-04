@@ -1,7 +1,6 @@
 #pragma once
 #include <chrono>
-#define num(i,j) (j+i*n) //Конвертирование двумерной адрессации в одинарную 
-const int n = 8;
+const int n = 10;
 
 using namespace std;
 using namespace std::chrono;
@@ -9,6 +8,8 @@ using namespace std::chrono;
 void VectorGenerator(double* outArray);
 
 void VectorGenerator2(double* outArray);
+
+double VectorNorm(double* a);
 
 void VectorOutput(double* x);
 
