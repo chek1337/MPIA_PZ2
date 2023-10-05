@@ -1,6 +1,6 @@
 #pragma once
 #include <chrono>
-const int n = 100;
+const int n = 2000;
 
 using namespace std;
 using namespace std::chrono;
@@ -21,6 +21,8 @@ void MatrixGenerator(double* outArray);
 void MatrixGenerator2(double* outArray);
 
 void MatrixUGenerator(double* outMatrix);
+
+void MatrixInit(double* matrix);
 
 void MatrixMatrixMultiplication(double* matrixA, double* matrixB, double* matrixC);
 

@@ -14,6 +14,7 @@ void Task1()
 	auto endTime = steady_clock::now();
 	printf("%lf\n", SP);
 	printf_s("a*b time %d", duration_cast<milliseconds>(endTime - startTime).count()); // перепроверить спецификатор %d
+	delete a, b;
 }
 
 void Task2()
@@ -22,18 +23,21 @@ void Task2()
 	matrixA = new double[n * n];
 	matrixB = new double[n * n];
 	matrixC = new double[n * n];
+	*matrixC = {};
 	MatrixGenerator(matrixA);
 	MatrixGenerator2(matrixB);
-	//MatrixOutDense(matrixA);
-	//MatrixOutDense(matrixB);
+	MatrixInit(matrixC);
+	MatrixOutDense(matrixA);
+	MatrixOutDense(matrixB);
+	MatrixOutDense(matrixC);
 	auto startTime = steady_clock::now();
 	MatrixMatrixMultiplication(matrixA, matrixB, matrixC);
 	auto endTime = steady_clock::now();
-	//MatrixOutDense(matrixC);
+	MatrixOutDense(matrixC);
 	printf_s("AB=C time %d\n", duration_cast<milliseconds>(endTime - startTime).count());
 	//Ne sovsem ponyal nado li vreamya norm'i zaemryat'
 	printf("Matrix Norm = %lf\n", MatrixNorm(matrixC)); 
-
+	delete matrixA, matrixB, matrixC;
 }
 
 void Task3()
@@ -57,6 +61,9 @@ void Task3()
 	printf_s("Uy=b time %d", duration_cast<milliseconds>(endTime - startTime).count());
 
 	printf_s("\n%f", VectorNorm(x));
+	printf_s("\n%f", VectorNorm(y));
+
+	delete b, x, y, matrixU;
 }
 
 void Task7()
@@ -67,6 +74,7 @@ void Task7()
 	matrixC = new double[n * n];
 	MatrixGenerator(matrixA);
 	MatrixGenerator2(matrixB);
+	MatrixInit(matrixC);
 	//MatrixOutDense(matrixA);
 	//MatrixOutDense(matrixB);
 	MatrixTransposition(matrixB);
@@ -74,10 +82,10 @@ void Task7()
 	auto startTime = steady_clock::now();
 	MatrixMatrixMultiplicationByLines(matrixA, matrixB, matrixC);
 	auto endTime = steady_clock::now();
-	///MatrixOutDense(matrixC);
+	//MatrixOutDense(matrixC);
 	printf_s("AB^T=C time %d", duration_cast<milliseconds>(endTime - startTime).count());
 
-	
+	delete matrixA, matrixB, matrixC;
 }
 
 
@@ -94,18 +102,16 @@ double ScalarProduct(double* a, double* b) {
 
 void MatrixMatrixMultiplication(double* matrixA, double* matrixB, double* matrixC)
 {
-	double sum = 0;
-#pragma omp parallel for reduction(+ : sum) num_threads(2)
+#pragma omp parallel for num_threads(4)
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < n; j++)
 		{
-			sum = 0;
+			matrixC[i * n + j] = 0;
 			for (int k = 0; k < n; k++)
 			{
-				sum += matrixA[i*n + k] * matrixB[k*n+j];
+				matrixC[i * n + j] += matrixA[i*n + k] * matrixB[k*n+j];
 			}
-			matrixC[i * n + j] = sum;
 		}
 	}
 }
@@ -133,12 +139,10 @@ double VectorNorm(double* a) {
 
 
 void CalculateY(double* matrixU, double* vectorX, double* vectorB) {
-
-	double sum = 0;
-#pragma omp parallel for reduction(+ : sum) num_threads(1)
 	for (int i = n - 1; i >= 0; i--)
 	{
 		double sum = 0;
+#pragma omp parallel for reduction(+ : sum) num_threads(12)
 		for (int j = n - 1; j > i; j--)
 		{
 			sum += matrixU[i*n+j] * vectorX[j];
@@ -149,18 +153,15 @@ void CalculateY(double* matrixU, double* vectorX, double* vectorB) {
 
 void MatrixMatrixMultiplicationByLines(double* matrixA, double* matrixB, double* matrixC)
 {
-	double sum = 0;
-#pragma omp parallel for reduction(+ : sum) num_threads(4)
+#pragma omp parallel for num_threads(4)
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < n; j++)
 		{
-			sum = 0;
 			for (int k = 0; k < n; k++)
 			{
-				sum += matrixA[i*n + k] * matrixB[j*n + k];
+				matrixC[i * n + j] += matrixA[i*n + k] * matrixB[j*n + k];
 			}
-			matrixC[i*n+j] = sum;
 		}
 	}
 }
@@ -196,6 +197,17 @@ void MatrixGenerator2(double* outArray) {
 	}
 }
 
+
+void MatrixInit(double * matrix)
+{
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = 0; j < n; j++)
+		{
+			matrix[i * n + j] = 0.0;
+		}
+	}
+}
 
 void MatrixVectorMultiplication(double* matrixA, double* vectorX, double* vectorB)
 {
