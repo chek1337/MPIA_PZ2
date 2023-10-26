@@ -37,7 +37,7 @@ void Task2()
 	printf_s("AB=C time %d\n", duration_cast<milliseconds>(endTime - startTime).count());
 	//Ne sovsem ponyal nado li vreamya norm'i zaemryat'
 	printf("Matrix Norm = %lf\n", MatrixNorm(matrixC)); 
-	delete matrixA, matrixB, matrixC;
+	delete[] matrixA, matrixB, matrixC;
 }
 
 void Task3()
